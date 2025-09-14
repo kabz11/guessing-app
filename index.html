@@ -157,16 +157,12 @@ function askVertical(pos) {
     ${buildVerticalTable()}
     <button class="btn btn-sm btn-outline-secondary mt-3" onclick="backVertical(${pos})">⬅ Back</button>
   `;
-  verticalChoices.forEach(v => updateRecord(v));
+  verticalChoices.slice(0, pos).forEach(v => updateRecord(v));
   document.querySelectorAll("td.clickable[data-col]").forEach(td=>{
     td.onclick = () => {
       verticalChoices[pos] = parseInt(td.dataset.col);
-      updateRecord(verticalChoices[pos]);
-      if (pos+1 < nameLength) {
-        askVertical(pos+1);
-      } else {
-        askHorizontal(0);
-      }
+      askVertical(pos+1 < nameLength ? pos+1 : pos); 
+      if (pos+1 === nameLength) askHorizontal(0);
     };
   });
 }
@@ -178,16 +174,11 @@ function askHorizontal(pos) {
     ${buildHorizontalTable()}
     <button class="btn btn-sm btn-outline-secondary mt-3" onclick="backHorizontal(${pos})">⬅ Back</button>
   `;
-
-  // show previously chosen row numbers
-  horizontalChoices.forEach(h => updateRecord(`${h}`));
-
+  horizontalChoices.slice(0, pos).forEach(h => updateRecord(`${h}`));
   document.querySelectorAll("td.clickable[data-row]").forEach(td => {
     td.onclick = () => {
-      let row = parseInt(td.dataset.row);   // keep row number (1–4)
+      let row = parseInt(td.dataset.row);
       horizontalChoices[pos] = row;         
-      updateRecord(`${row}`);               
-
       if (pos + 1 < nameLength) {
         askHorizontal(pos + 1);
       } else {
@@ -197,6 +188,27 @@ function askHorizontal(pos) {
   });
 }
 
+// ✅ NEW: Back button for vertical step
+function backVertical(pos) {
+  if (pos > 0) {
+    verticalChoices = verticalChoices.slice(0, pos-1); 
+    askVertical(pos-1);
+  } else {
+    // go back to name length input
+    chooseType(chosenType);
+  }
+}
+
+// ✅ NEW: Back button for horizontal step
+function backHorizontal(pos) {
+  if (pos > 0) {
+    horizontalChoices = horizontalChoices.slice(0, pos-1);
+    askHorizontal(pos-1);
+  } else {
+    // go back to vertical step
+    askVertical(nameLength-1);
+  }
+}
 
 function showResult() {
   let layout = [
@@ -205,10 +217,9 @@ function showResult() {
     ["O","P","Q","R","S","T","U"],
     ["V","W","X","Y","Z","",""]
   ];
-
   let name = horizontalChoices.map((row, i) => {
-    let col = verticalChoices[i] - 1; // column chosen in vertical step
-    return layout[row - 1][col] || ""; // ✅ row number converted to letter
+    let col = verticalChoices[i] - 1;
+    return layout[row - 1][col] || "";
   }).join("");
 
   let emoji = "✨";
@@ -227,8 +238,7 @@ function showResult() {
   `;
 }
 
-
-// Emoji background animation
+// Emoji animation
 let emojiInterval;
 function startEmojis(symbol) {
   clearEmojis();
@@ -249,6 +259,8 @@ function clearEmojis() {
 
 startGame();
 </script>
+
 </body>
 </html>
+
 
