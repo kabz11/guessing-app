@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Name Guessing Game</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: linear-gradient(135deg, #74ebd5, #ACB6E5); font-family: "Poppins", sans-serif; overflow-x: hidden; }
+    .game-container {
+      max-width: 600px; margin: 20px auto; background: #fff; 
+      padding: 20px; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      position: relative; z-index: 2;
+    }
+    .grid-table td {
+      border: 1px solid #ccc; width: 46px; height: 46px; text-align: center; font-weight: bold;
+    }
+    .clickable {
+      cursor: pointer; background: #f8f9fa; border-radius: 8px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .clickable:hover {
+      background: #d0ebff; transform: scale(1.05);
+    }
+    #record {
+      margin-bottom: 10px;
+      min-height: 35px;
+    }
+    .badge {
+      font-size: 14px;
+      background: #0d6efd !important;
+    }
+    .btn-back {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 14px;
+    }
+
+    /* Floating emoji animation */
+    .emoji {
+      position: fixed;
+      bottom: -50px;
+      font-size: 26px;
+      animation: floatUp 5s linear infinite;
+      z-index: 1;
+      opacity: 0.9;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-110vh) scale(1.5); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="game-container text-center">
+  <h3 class="mb-3">✨ Name Guessing Game ✨</h3>
+  <div id="app"></div>
+</div>
+
+<script>
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+// vertical = 7 columns
+function buildVerticalTable() {
+  let table = "<table class='mx-auto grid-table'>";
+  // header row
+  table += "<tr>";
+  for (let c=0; c<7; c++) {
+    table += `<td class="clickable" data-col="${c+1}">${c+1}</td>`;
+  }
+  table += "</tr>";
+  // letters
+  for (let r=0; r<4; r++) {
+    table += "<tr>";
+    for (let c=0; c<7; c++) {
+      let letter = alphabet[r*7+c] ?? "";
+      table += `<td>${letter}</td>`;
+    }
+    table += "</tr>";
+  }
+  table += "</table>";
+  return table;
+}
+
+// horizontal = 4 rows
+function buildHorizontalTable() {
+  let layout = [
+    ["A","B","C","D","E","F","G"],
+    ["H","I","J","K","L","M","N"],
+    ["O","P","Q","R","S","T","U"],
+    ["V","W","X","Y","Z","",""]
+  ];
+  let table = "<table class='mx-auto grid-table'>";
+  for (let r=0; r<layout.length; r++) {
+    table += "<tr>";
+    table += `<td class="clickable" data-row="${r+1}"><strong>${r+1}</strong></td>`;
+    for (let c=0; c<layout[r].length; c++) {
+      let letter = layout[r][c] || "";
+      table += `<td>${letter}</td>`;
+    }
+    table += "</tr>";
+  }
+  table += "</table>";
+  return table;
+}
+
+let chosenType = "";
+let nameLength = 0;
+let verticalChoices = [];
+let horizontalChoices = [];
+
+const app = document.getElementById("app");
+
+function startGame() {
+  clearEmojis();
+  app.innerHTML = `
+    <p class="fw-bold">Who do you want to guess?</p>
+    <button class="btn btn-primary m-2 w-75" onclick="chooseType('crush')">💘 Crush</button>
+    <button class="btn btn-success m-2 w-75" onclick="chooseType('boyfriend')">❤️ Boyfriend</button>
+    <button class="btn btn-danger m-2 w-75" onclick="chooseType('girlfriend')">💖 Girlfriend</button>
+    <button class="btn btn-warning m-2 w-75" onclick="chooseType('admire')">🤗 Admire</button>
+    <button class="btn btn-dark m-2 w-75" onclick="chooseType('hate')">😡 Hate</button>
+  `;
+}
+
+function chooseType(type) {
+  chosenType = type;
+  app.innerHTML = `
+    <p class="fw-bold">Enter the length of the name:</p>
+    <input id="nameLen" type="number" min="1" max="12" class="form-control mb-3" placeholder="e.g. 7">
+    <button class="btn btn-primary w-100" onclick="setNameLength()">Proceed</button>
+    <button class="btn btn-secondary w-100 mt-2" onclick="startGame()">⬅ Back</button>
+  `;
+}
+
+function setNameLength() {
+  nameLength = parseInt(document.getElementById("nameLen").value);
+  if (isNaN(nameLength) || nameLength < 1) {
+    alert("Please enter a valid number");
+    return;
+  }
+  verticalChoices = [];
+  horizontalChoices = [];
+  askVertical(0);
+}
+
+// record update
+function updateRecord(value) {
+  document.getElementById("record").innerHTML += `<span class="badge m-1">${value}</span>`;
+}
+
+function askVertical(pos) {
+  app.innerHTML = `
+    <button class="btn btn-sm btn-outline-secondary btn-back" onclick="backVertical(${pos})">⬅ Back</button>
+    <p class="fw-bold mt-4">Step 1: Choose column number for letter ${pos+1} (Vertical)</p>
+    <div id="record"></div>
+    ${buildVerticalTable()}
+  `;
+  verticalChoices.forEach(v => updateRecord(v));
+  document.querySelectorAll("td.clickable[data-col]").forEach(td=>{
+    td.onclick = () => {
+      verticalChoices[pos] = parseInt(td.dataset.col);
+      updateRecord(verticalChoices[pos]);
+      if (pos+1 < nameLength) {
+        askVertical(pos+1);
+      } else {
+        askHorizontal(0);
+      }
+    };
+  });
+}
+
+function backVertical(pos) {
+  if (pos > 0) {
+    verticalChoices.pop();
+    askVertical(pos-1);
+  } else {
+    chooseType(chosenType);
+  }
+}
+
+function askHorizontal(pos) {
+  app.innerHTML = `
+    <button class="btn btn-sm btn-outline-secondary btn-back" onclick="backHorizontal(${pos})">⬅ Back</button>
+    <p class="fw-bold mt-4">Step 2: Choose row number for letter ${pos+1} (Horizontal)</p>
+    <div id="record"></div>
+    ${buildHorizontalTable()}
+  `;
+
+  // show previously chosen row numbers
+  horizontalChoices.forEach(h => updateRecord(`${h}`));
+
+  document.querySelectorAll("td.clickable[data-row]").forEach(td => {
+    td.onclick = () => {
+      let row = parseInt(td.dataset.row);   // ✅ keep row number (1–4)
+      horizontalChoices[pos] = row;         // ✅ store row number instead of letter
+      updateRecord(`${row}`);               // ✅ display row number in record
+
+      if (pos + 1 < nameLength) {
+        askHorizontal(pos + 1);
+      } else {
+        showResult(); // final step
+      }
+    };
+  });
+}
+
+
+function showResult() {
+  let layout = [
+    ["A","B","C","D","E","F","G"],
+    ["H","I","J","K","L","M","N"],
+    ["O","P","Q","R","S","T","U"],
+    ["V","W","X","Y","Z","",""]
+  ];
+
+  let name = horizontalChoices.map((row, i) => {
+    let col = verticalChoices[i] - 1; // column chosen in vertical step
+    return layout[row - 1][col] || ""; // ✅ row number converted to letter
+  }).join("");
+
+  let emoji = "✨";
+  if (chosenType === "boyfriend" || chosenType === "girlfriend") emoji = "❤️";
+  if (chosenType === "crush") emoji = "💘";
+  if (chosenType === "admire") emoji = "🤗";
+  if (chosenType === "hate") emoji = "😡";
+
+  startEmojis(emoji);
+
+  app.innerHTML = `
+    <div class="alert ${chosenType === 'hate' ? 'alert-danger' : 'alert-success'} fs-5">
+      🎉 ${chosenType === 'hate' ? 'Oops!' : 'Congratulations!'} Your ${chosenType} name is <strong>${name}</strong>
+    </div>
+    <button class="btn btn-primary mt-3 w-100" onclick="startGame()">🔄 Play Again</button>
+  `;
+}
+
+
+// Emoji background animation
+let emojiInterval;
+function startEmojis(symbol) {
+  clearEmojis();
+  emojiInterval = setInterval(()=>{
+    let span = document.createElement("span");
+    span.className = "emoji";
+    span.textContent = symbol;
+    span.style.left = Math.random() * 100 + "vw";
+    span.style.animationDuration = (3 + Math.random()*3) + "s";
+    document.body.appendChild(span);
+    setTimeout(()=>span.remove(), 6000);
+  }, 400);
+}
+function clearEmojis() {
+  clearInterval(emojiInterval);
+  document.querySelectorAll(".emoji").forEach(e => e.remove());
+}
+
+startGame();
+</script>
+</body>
+</html>
