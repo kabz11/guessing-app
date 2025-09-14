@@ -152,10 +152,10 @@ function updateRecord(value) {
 
 function askVertical(pos) {
   app.innerHTML = `
-    <button class="btn btn-sm btn-outline-secondary btn-back" onclick="backVertical(${pos})">⬅ Back</button>
     <p class="fw-bold mt-4">Step 1: Choose column number for letter ${pos+1} (Vertical)</p>
     <div id="record"></div>
     ${buildVerticalTable()}
+    <button class="btn btn-sm btn-outline-secondary mt-3" onclick="backVertical(${pos})">⬅ Back</button>
   `;
   verticalChoices.forEach(v => updateRecord(v));
   document.querySelectorAll("td.clickable[data-col]").forEach(td=>{
@@ -171,21 +171,12 @@ function askVertical(pos) {
   });
 }
 
-function backVertical(pos) {
-  if (pos > 0) {
-    verticalChoices.pop();
-    askVertical(pos-1);
-  } else {
-    chooseType(chosenType);
-  }
-}
-
 function askHorizontal(pos) {
   app.innerHTML = `
-    <button class="btn btn-sm btn-outline-secondary btn-back" onclick="backHorizontal(${pos})">⬅ Back</button>
     <p class="fw-bold mt-4">Step 2: Choose row number for letter ${pos+1} (Horizontal)</p>
     <div id="record"></div>
     ${buildHorizontalTable()}
+    <button class="btn btn-sm btn-outline-secondary mt-3" onclick="backHorizontal(${pos})">⬅ Back</button>
   `;
 
   // show previously chosen row numbers
@@ -193,14 +184,14 @@ function askHorizontal(pos) {
 
   document.querySelectorAll("td.clickable[data-row]").forEach(td => {
     td.onclick = () => {
-      let row = parseInt(td.dataset.row);   // ✅ keep row number (1–4)
-      horizontalChoices[pos] = row;         // ✅ store row number instead of letter
-      updateRecord(`${row}`);               // ✅ display row number in record
+      let row = parseInt(td.dataset.row);   // keep row number (1–4)
+      horizontalChoices[pos] = row;         
+      updateRecord(`${row}`);               
 
       if (pos + 1 < nameLength) {
         askHorizontal(pos + 1);
       } else {
-        showResult(); // final step
+        showResult(); 
       }
     };
   });
@@ -260,3 +251,4 @@ startGame();
 </script>
 </body>
 </html>
+
